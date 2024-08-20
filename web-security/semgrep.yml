@@ -1,0 +1,27 @@
+rules:
+  - id: insecure-http-method
+    patterns:
+      - pattern: $METHOD $URL
+    message: "Insecure HTTP method found"
+    severity: WARNING
+    languages: [java]
+    path: ./src/main/java
+
+  - id: sql-injection
+    patterns:
+      - pattern: $QUERY
+      - pattern-inside: |
+          PreparedStatement stmt = conn.prepareStatement($QUERY)
+    message: "Potential SQL Injection vulnerability"
+    severity: ERROR
+    languages: [java]
+    path: ./src/main/java
+
+  - id: hardcoded-credentials
+    patterns:
+      - pattern: |
+          String password = "$PASSWORD"
+    message: "Hardcoded credentials found"
+    severity: ERROR
+    languages: [java]
+    path: ./src/main/java
