@@ -1,7 +1,5 @@
 package com.dennis.web.security.controller;
 
-
-
 import com.dennis.web.security.model.User;
 import org.owasp.encoder.Encode;
 import org.springframework.http.HttpStatus;
@@ -20,17 +18,14 @@ public class UserController {
 
     @PostMapping("/create")
     public ResponseEntity<String> createUser(@Validated @RequestBody User user) {
-        // Input validation is automatically handled by @Validated
         users.add(user);
         return new ResponseEntity<>("User created successfully", HttpStatus.CREATED);
     }
 
     @GetMapping("/{email}")
     public ResponseEntity<String> getUserByEmail(@PathVariable("email") String email) {
-        // Output encoding
         String safeEmail = Encode.forHtml(email);
 
-        // Simulate finding a user
         for (User user : users) {
             if (user.getEmail().equalsIgnoreCase(safeEmail)) {
                 return new ResponseEntity<>("User found: " + Encode.forHtml(user.getName()), HttpStatus.OK);
@@ -39,6 +34,4 @@ public class UserController {
 
         return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
     }
-
 }
-
