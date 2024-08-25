@@ -1,5 +1,6 @@
 package com.dennis.web.security.util;
 
+import com.dennis.web.security.config.RsaKeyProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -39,28 +40,10 @@ public class JwtUtil {
         this.publicKey = keyFactory.generatePublic(keySpecPublic);
     }*/
 
-    public JwtUtil() {
-        try {
-            // Load private key
-            byte[] keyBytes = Files.readAllBytes(Paths.get("src/main/resources/private.pk8"));
-            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            this.privateKey = keyFactory.generatePrivate(keySpec);
+    public JwtUtil(RsaKeyProperties rsaKeys) {
+        this.privateKey = rsaKeys.privateKey();
+        this.publicKey = rsaKeys.publicKey();
 
-            // Load and clean up public key
-            keyBytes = Files.readAllBytes(Paths.get("src/main/resources/public.pem"));
-            String keyContent = new String(keyBytes);
-            keyContent = keyContent
-                    .replace("-----BEGIN PUBLIC KEY-----", "")
-                    .replace("-----END PUBLIC KEY-----", "")
-                    .replaceAll("\\s+", "");
-            byte[] decoded = Base64.getDecoder().decode(keyContent);
-            X509EncodedKeySpec keySpecPublic = new X509EncodedKeySpec(decoded);
-            this.publicKey = keyFactory.generatePublic(keySpecPublic);
-        } catch (Exception e) {
-            // Log the exception with details
-            throw new RuntimeException("Failed to initialize JwtUtil: " + e.getMessage(), e);
-        }
     }
 
     public String extractUsername(String token) {
@@ -78,9 +61,8 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(publicKey)
-                .parseClaimsJws(token)
-                .getBody();
+                .verifyWith(publicKey)
+                .build().parseSignedClaims(token).getPayload();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -98,7 +80,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
-                .signWith(SignatureAlgorithm.RS256, privateKey)
+                .signWith( privateKey)
                 .compact();
     }
 
