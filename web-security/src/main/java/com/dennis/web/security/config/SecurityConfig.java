@@ -15,9 +15,12 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -36,7 +39,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // Configuring the security filter chain
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(   CookieCsrfTokenRepository.withHttpOnlyFalse()) // CSRF token stored in a cookie
+                )
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/users/create").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
@@ -45,7 +50,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(withDefaults())
-                .httpBasic(withDefaults());
+                .httpBasic(withDefaults())
+                .oauth2Login(oauth2 -> oauth2 // Configure OAuth 2.0 Login
+                        .loginPage("/oauth2/authorization/google") // Custom OAuth 2.0 login page
+                        .defaultSuccessUrl("/home") // Default success URL after login
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Use JWT tokens
+                        )
+                );
 
         return http.build();
     }
@@ -80,5 +94,12 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(new JwtGrantedAuthoritiesConverter());
+        return converter;
     }
 }
