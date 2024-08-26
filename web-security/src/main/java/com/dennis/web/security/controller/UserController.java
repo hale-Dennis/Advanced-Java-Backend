@@ -11,10 +11,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+//@RequestMapping("/api/users")
 public class UserController {
 
     private List<User> users = new ArrayList<>();
+
+    @GetMapping("/home")
+    public String hello() {
+        return "You are logged in! oAuth2";
+    }
 
     @PostMapping("/create")
     public ResponseEntity<String> createUser(@Validated @RequestBody User user) {
@@ -34,4 +39,6 @@ public class UserController {
 
         return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
     }
+
+
 }
