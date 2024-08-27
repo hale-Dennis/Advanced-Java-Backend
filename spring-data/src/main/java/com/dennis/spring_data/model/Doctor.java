@@ -13,5 +13,4 @@ public class Doctor extends Employee {
     @Column(name = "specialty", nullable = false)
     private String specialty;
 
-    // Getters and Setters
 }
