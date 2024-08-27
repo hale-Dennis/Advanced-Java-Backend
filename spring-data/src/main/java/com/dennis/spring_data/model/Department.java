@@ -30,7 +30,5 @@ public class Department {
 
     @OneToMany(mappedBy = "department")
     private List<Ward> wards;
-
-    // Getters and Setters
 }
 

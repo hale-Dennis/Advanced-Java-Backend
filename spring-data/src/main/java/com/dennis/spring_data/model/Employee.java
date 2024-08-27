@@ -25,6 +25,6 @@ public abstract class Employee {
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
-    // Getters and Setters
+
 }
 

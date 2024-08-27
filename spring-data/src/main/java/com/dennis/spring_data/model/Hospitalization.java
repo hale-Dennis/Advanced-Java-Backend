@@ -31,7 +31,5 @@ public class Hospitalization {
     @ManyToOne
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
-
-    // Getters and Setters
 }
 
