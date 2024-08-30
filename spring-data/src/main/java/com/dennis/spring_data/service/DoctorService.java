@@ -6,7 +6,6 @@ import com.dennis.spring_data.repository.DoctorRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -65,6 +64,11 @@ public class DoctorService {
 
         try {
             Doctor savedDoctor = doctorRepository.save(doctor);
+
+            // Temporarily throw a RuntimeException after saving the doctor
+            if(true){
+                throw new RuntimeException("Forcing a rollback for testing purposes");
+            }
             transactionManager.commit(status);
             return savedDoctor;
         } catch (RuntimeException e) {
