@@ -1,88 +1,127 @@
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.ForkJoinPool;
 
-// TicketBookingSystem class to manage ticket booking
-class TicketBookingSystem {
-    private int availableTickets;
+public class Main {
 
-    public TicketBookingSystem(int totalTickets) {
-        this.availableTickets = totalTickets;
-    }
-
-    // Synchronized method to book tickets
-    public synchronized boolean bookTicket(int numTickets) {
-        if (numTickets <= availableTickets) {
-            System.out.println(Thread.currentThread().getName() + " booked " + numTickets + " ticket(s).");
-            availableTickets -= numTickets;
-            return true;
-        } else {
-            System.out.println(Thread.currentThread().getName() + " tried to book " + numTickets + " ticket(s) but only " + availableTickets + " available.");
-            return false;
+    // Example class demonstrating thread interruption
+    static class InterruptibleTask implements Runnable {
+        @Override
+        public void run() {
+            try {
+                for (int i = 0; i < 10; i++) {
+                    System.out.println(Thread.currentThread().getName() + " running: " + i);
+                    Thread.sleep(500); // Simulate long-running task
+                }
+            } catch (InterruptedException e) {
+                System.out.println(Thread.currentThread().getName() + " was interrupted!");
+            }
         }
     }
 
-    public int getAvailableTickets() {
-        return availableTickets;
+    // Example class demonstrating a deadlock situation
+    static class Resource {
+        public synchronized void method1(Resource r) {
+            System.out.println(Thread.currentThread().getName() + " acquired method1");
+            try { Thread.sleep(100); } catch (InterruptedException e) {}
+            r.method2(this);
+        }
+
+        public synchronized void method2(Resource r) {
+            System.out.println(Thread.currentThread().getName() + " acquired method2");
+            try { Thread.sleep(100); } catch (InterruptedException e) {}
+            r.method1(this);
+        }
     }
-}
 
-// Runnable class for booking tickets
-class TicketBookingTask implements Runnable {
-    private final TicketBookingSystem ticketBookingSystem;
-    private final int numTickets;
+    // Solution class to avoid deadlock
+    static class SafeResource {
+        public void method1(SafeResource r) {
+            synchronized (this) {
+                System.out.println(Thread.currentThread().getName() + " acquired Safe method1");
+                try { Thread.sleep(100); } catch (InterruptedException e) {}
+            }
+            r.method2();
+        }
 
-    public TicketBookingTask(TicketBookingSystem ticketBookingSystem, int numTickets) {
-        this.ticketBookingSystem = ticketBookingSystem;
-        this.numTickets = numTickets;
+        public void method2() {
+            synchronized (this) {
+                System.out.println(Thread.currentThread().getName() + " acquired Safe method2");
+                try { Thread.sleep(100); } catch (InterruptedException e) {}
+            }
+        }
     }
 
-    @Override
-    public void run() {
-        ticketBookingSystem.bookTicket(numTickets);
-    }
-}
+    // Example class demonstrating Fork/Join framework
+    static class FibonacciTask extends RecursiveTask<Integer> {
+        private final int n;
 
-// Main class demonstrating thread creation, management, synchronization, and thread pool implementation
-public class Main {
+        public FibonacciTask(int n) {
+            this.n = n;
+        }
+
+        @Override
+        protected Integer compute() {
+            if (n <= 1) {
+                return n;
+            }
+            FibonacciTask task1 = new FibonacciTask(n - 1);
+            task1.fork(); // Asynchronously execute task1
+            FibonacciTask task2 = new FibonacciTask(n - 2);
+            return task2.compute() + task1.join(); // Compute task2 and wait for task1 to complete
+        }
+    }
+
     public static void main(String[] args) {
-        // Creating a ticket booking system with 10 tickets available
-        TicketBookingSystem bookingSystem = new TicketBookingSystem(10);
+        // 1. Thread Interruption Example
+        Thread interruptibleThread = new Thread(new InterruptibleTask(), "InterruptibleThread");
+        interruptibleThread.start();
 
-        // Creating and starting threads directly
-        Thread t1 = new Thread(new TicketBookingTask(bookingSystem, 3), "User-1"); // Book 3 tickets
-        Thread t2 = new Thread(new TicketBookingTask(bookingSystem, 4), "User-2"); // Book 4 tickets
-        Thread t3 = new Thread(new TicketBookingTask(bookingSystem, 5), "User-3"); // Book 5 tickets
-
-        t1.start();
-        t2.start();
-        t3.start();
-
-        // Using join() to wait for threads to finish
         try {
-            t1.join();
-            t2.join();
-            t3.join();
+            Thread.sleep(2000); // Let the thread run for a while
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        System.out.println("Tickets remaining after direct thread operations: " + bookingSystem.getAvailableTickets());
+        interruptibleThread.interrupt(); // Interrupt the thread
 
-        // Implementing a thread pool to handle multiple booking requests
-        ExecutorService executor = Executors.newFixedThreadPool(3);
+        // 2. Deadlock Scenario Example
+        Resource resource1 = new Resource();
+        Resource resource2 = new Resource();
 
-        // Adding multiple booking tasks to the thread pool
-        executor.execute(new TicketBookingTask(bookingSystem, 2));  // Book 2 tickets
-        executor.execute(new TicketBookingTask(bookingSystem, 1));  // Book 1 ticket
-        executor.execute(new TicketBookingTask(bookingSystem, 4));  // Book 4 tickets
-        executor.execute(new TicketBookingTask(bookingSystem, 2));  // Book 2 tickets
+        Thread deadlockThread1 = new Thread(() -> resource1.method1(resource2), "DeadlockThread-1");
+        Thread deadlockThread2 = new Thread(() -> resource2.method1(resource1), "DeadlockThread-2");
 
-        // Shutdown the executor
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-            // Wait for all tasks to finish
+        deadlockThread1.start();
+        deadlockThread2.start();
+
+        try {
+            deadlockThread1.join();
+            deadlockThread2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        System.out.println("Tickets remaining after thread pool operations: " + bookingSystem.getAvailableTickets());
+        // 3. Deadlock Solution Example
+        SafeResource safeResource1 = new SafeResource();
+        SafeResource safeResource2 = new SafeResource();
+
+        Thread safeThread1 = new Thread(() -> safeResource1.method1(safeResource2), "SafeThread-1");
+        Thread safeThread2 = new Thread(() -> safeResource2.method1(safeResource1), "SafeThread-2");
+
+        safeThread1.start();
+        safeThread2.start();
+
+        try {
+            safeThread1.join();
+            safeThread2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // 4. Fork/Join Framework Example
+        ForkJoinPool pool = new ForkJoinPool();
+        FibonacciTask fibonacciTask = new FibonacciTask(10);
+        int result = pool.invoke(fibonacciTask);
+        System.out.println("Fibonacci result: " + result);
     }
 }
