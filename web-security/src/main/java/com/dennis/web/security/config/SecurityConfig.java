@@ -22,11 +22,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/users/create").hasRole("ADMIN")
-                        .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/actuator/health").permitAll() // Allow access by anyone
+                        .requestMatchers("/actuator/**").hasRole("ADMIN") // all other actuator endpoints should only be accessible by the admin
                         .anyRequest().authenticated()
                 )
-                .formLogin(withDefaults())  // Use default login page
                 .httpBasic(withDefaults());
 
 
