@@ -1,13 +1,20 @@
 package com.dennis.spring_data.controller;
 
+
 import com.dennis.spring_data.model.Doctor;
 import com.dennis.spring_data.service.DoctorService;
+
+import org.apache.logging.log4j.Level;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.Controller;
 
 
 @RestController
@@ -17,6 +24,13 @@ public class DoctorController {
     @Autowired
     private DoctorService doctorService;
 
+    private static final Logger LOG = LogManager.getLogger(Controller.class);
+
+    @GetMapping(value = "/echo")
+    public String echoMessage() {
+        LOG.log(Level.INFO, "Echo Triggered");
+        return "Echo Triggered";
+    }
 
     @PostMapping
     public Doctor createDoctor(@RequestBody Doctor doctor) {
