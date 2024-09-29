@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app-kubernetes-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring-app-kubernetes
+  template:
+    metadata:
+      labels:
+        app: spring-app-kubernetes
+    spec:
+      containers:
+        - name: spring-app-kubernetes-container
+          image: deneki/spring-app-kubernetes:latest
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-boot-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: spring-app-kubernetes
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
