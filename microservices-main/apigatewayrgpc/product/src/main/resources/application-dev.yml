@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: product
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product
+    username: postgres
+    password: "@Kanekipass12"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+server:
+  port: 8081
